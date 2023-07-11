@@ -1,1 +1,1 @@
-«Create Ubuntu 20.04 VM»
+Развертывание виртуальной машины из vagrantfile с установленным Appach web server.
