@@ -1,27 +1,19 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
-# Описываем Виртуальные машины
-MACHINES = {
-  # Указываем имя ВМ "kernel update"
-  :"kernel-update" => {
-              #Какой vm box будем использовать
-              :box_name => "generic/centos9s",
-              #Указываем box_version
-              :box_version => "4.2.14",
-              #Указываем количество ядер ВМ
-              :cpus => 1,
-              #Указываем количество ОЗУ в мегабайтах
-              :memory => 1024,
+MACHINES = { #Описываем переменные для создания vm
+  :"kernel-update" => { #Указываем имя ВМ "kernel update"
+              :box_name => "generic/centos9s", #Указываем Vagrant box с ос, образ которой будет загружен
+              :box_version => "4.2.14", #Указываем box_version
+              :cpus => 1, #Указываем количество ядер ВМ
+              :memory => 1024, #Указываем количество ОЗУ в мегабайтах
             }
 }
 
-Vagrant.configure("2") do |config|
+Vagrant.configure("2") do |config| #Циклы для создания новой vm
   MACHINES.each do |boxname, boxconfig|
-    # Отключаем проброс общей папки в ВМ
-    config.vm.synced_folder ".", "/vagrant", disabled: true
-    # Применяем конфигурацию ВМ
-    config.vm.define boxname do |box|
+    config.vm.synced_folder ".", "/vagrant", disabled: true #Отключаем проброс общей папки в vm
+    config.vm.define boxname do |box| #Цикл для конфигурирования vm
       box.vm.box = boxconfig[:box_name]
       box.vm.box_version = boxconfig[:box_version]
       box.vm.host_name = boxname.to_s
