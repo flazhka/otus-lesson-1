@@ -27,10 +27,10 @@
 ### Сборка RAID 0/1/5/6/10
 `sudo lshw -short | grep disk` #Вывод информации о присутвующих дисках
 `sudo fdisk -l` #Вывод информации о присутвующих дисках
-mdadm --zero-superblock --force /dev/sd{b,c,d,e,f} #Зануление суперблоков
-mdadm --create --verbose /dev/md0 -l 6 -n 5 /dev/sd{b,c,d,e,f} #Опция -l 6 пределяет уровень raid, -n указывает колличество дисков.
-cat /proc/mdstat # Вывод информации о RAID массиве.
-mdadm -D /dev/md0
+mdadm --zero-superblock --force /dev/sd{b,c,d,e,f} #Зануление суперблоков  
+mdadm --create --verbose /dev/md0 -l 6 -n 5 /dev/sd{b,c,d,e,f} #Опция -l 6 пределяет уровень raid, -n указывает колличество дисков  
+cat /proc/mdstat # Вывод информации о RAID массиве  
+mdadm -D /dev/md0  
 
 
 ### Создание mdadm.conf 
