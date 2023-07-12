@@ -24,7 +24,7 @@
 }
 ```
 
-### Сборка RAID 0/1/5/10
+### Сборка RAID 0/1/5/6/10
 `sudo lshw -short | grep disk` #Вывод информации о присутвующих дисках
 `sudo fdisk -l` #Вывод информации о присутвующих дисках
 mdadm --zero-superblock --force /dev/sd{b,c,d,e,f} #Зануление суперблоков
