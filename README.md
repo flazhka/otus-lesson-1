@@ -1,2 +1,2 @@
-# otuslab-homework
-OTUS learning
+# Repository "otuslab-homework"
+OTUS learning 
