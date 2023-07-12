@@ -131,7 +131,7 @@ md0 : active raid5 sdf[5] sde[3](F) sdd[2] sdc[1] sdb[0]
 ### Создание GPT раздела, из 5ти партиций и монтирование к fs
 `sudo parted -s /dev/md0 mklabel gpt` #Создаем раздел GPT на созданный RAID   
 
-`sudo parted /dev/md0 mkpart primary ext4 0% 20%`  #Создание рартиции  
+`sudo parted /dev/md0 mkpart primary ext4 0% 20%`  #Создание партиции  
 `sudo parted /dev/md0 mkpart primary ext4 20% 40%`  
 `sudo parted /dev/md0 mkpart primary ext4 40% 60%`  
 `sudo parted /dev/md0 mkpart primary ext4 60% 80%`  
