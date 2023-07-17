@@ -242,8 +242,3 @@ resize2fs 1.46.5 (30-Dec-2021)
 The containing partition (or device) is only 344064 (4k) blocks.
 You requested a new size of 524288 blocks.
 ```
-
-
-
-
-
