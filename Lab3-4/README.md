@@ -427,11 +427,11 @@ NAME                    MAJ:MIN RM  SIZE RO TYPE MOUNTPOINTS
 sda                       8:0    0  128G  0 disk 
 ├─sda1                    8:1    0    1G  0 part /boot
 └─sda2                    8:2    0  127G  0 part 
-  ├─centos9s-root       253:0    0  125G  0 lvm  /
-  └─centos9s-swap       253:1    0    2G  0 lvm  [SWAP]
+│ ├─centos9s-root       253:0    0  125G  0 lvm  /
+│ └─centos9s-swap       253:1    0    2G  0 lvm  [SWAP]
 └─sda3                    8:3    0   39G  0 part 
-  ├─VolGroup00-LogVol01 253:1    0  1.5G  0 lvm  [SWAP]
-  └─VolGroup00-LogVol00 253:2    0 37.5G  0 lvm  
+│ ├─VolGroup00-LogVol01 253:1    0  1.5G  0 lvm  [SWAP]
+│ └─VolGroup00-LogVol00 253:2    0 37.5G  0 lvm  
 sdb                       8:16   0    1G  0 disk 
 └─vg_root-lv_root       253:2    0 1020M  0 lvm  /mnt
 sdc                       8:32   0  512M  0 disk 
