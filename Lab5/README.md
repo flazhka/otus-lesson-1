@@ -223,9 +223,25 @@ otus  checksum  sha256     local
 - какая контрольная сумма используется = sha256
 
 ### Работа со снапшотом, поиск сообщения от преподавателя
+Скачаем файл, указанный в задании:  
+`wget -O otus_task2.file --no-check-certificate "https://drive.google.com/u/0/uc?id=1gH8gCL9y7Nd5Ti3IRmplZPF1XjzxeRAG&export=download"`
 
 
+Восстановим файловую систему из снапшота:  
+`zfs receive otus/test@today < otus_task2.file`
 
+Найдем секретное сообщение:  
+```
+vagrant@zfs:~$ find /otus/test -name "secret_message"
+/otus/test/task1/file_mess/secret_message
+```
+Прочитаем соощение:  
+```
+vagrant@zfs:~$ cat /otus/test/task1/file_mess/secret_message
+https://github.com/sindresorhus/awesome
+```
+  
+Зашифрованное сообщение - https://github.com/sindresorhus/awesome
 
 
 
