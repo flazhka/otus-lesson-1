@@ -10,9 +10,12 @@ Vagrant.configure(2) do |config|
    config.vm.define "nfss" do |nfss|
    nfss.vm.network "private_network", ip: "192.168.10.30", virtualbox__intnet: "net1"
    nfss.vm.hostname = "nfss"
+   nfs_server.vm.provision "shell", path: "nfs_server_script.sh" #Добавляем скрип при разввертаывнии
   end
    config.vm.define "nfsc" do |nfsc|
    nfsc.vm.network "private_network", ip: "192.168.10.31", virtualbox__intnet: "net1"
    nfsc.vm.hostname = "nfsc"
+   nfs_client.vm.provision "shell", path: "nfs_client_script.sh" #Добавляем скрип при разввертаывнии
   end
 end  
+ 
