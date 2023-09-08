@@ -26,28 +26,30 @@ sudo -i
 Устанавливаем утилиты nfs-utils, включаем сервер NFS - __/etc/nfs.conf__ доп настройки
 ```shell
 yum install nfs-utils -y
-systemctl enable nfs-server --now 
+cp /etc/nfs.conf /etc/nfs.conf.bak
+sed -i -e 's/# udp=n/udp=y/g' /etc/nfs.conf
+systemctl enable --now nfs-server
 ``` 
+
 Создаём и настраиваем директорию, которая будет экспортирована в будущем 
 ```shell 
 mkdir -p /nfs_share/upload
+echo 'Hi, this is test-file, if this file exist and can be changed - nfs server work correctly' | tee /nfsshare/upload/test_nfs_file.txt
 chown -R root:root /nfs_share
 chmod 0766 /nfs_share
-touch /nfs_share/upload/test_server_file.txt
 chown -R nfsnobody:nfsnobody /nfs_share/upload
 ```
 В файле __/etc/exports__ прописываем список шаренных дирректорий и параметров к ним
 ```shell
-echo "/nfs_share 192.168.10.0/24(rw,sync,no_root_squash,no_all_squash)" >> /etc/exports
+echo "/nfs_share 192.168.10.31/24(rw,sync,no_wdelay,no_root_squash)" >> /etc/exports
 exportfs -a
-systemctl restart nfs-server
 ```
 Включаем и настраиваем firewalld
 ```shell 
 systemctl enable firewalld --now 
-firewall-cmd --permanent --zone=public --add-service={nfs,nfs3,ssh,rpc-bind,mountd}
-firewall-cmd --permanent --add-port=2049/udp
-firewall-cmd --permanent --add-port=20048/udp
+firewall-cmd --add-service={nfs,nfs3,rpc-bind,mountd} --zone=public --permanent
+firewall-cmd --add-port=2049/udp --permanent
+firewall-cmd --add-port=20048/udp --permanent
 firewall-cmd --reload
 ``` 
 
@@ -62,56 +64,28 @@ sudo -i
 ```
 Устанавливаем утилиты nfs-utils
 ```shell
-yum -y install nfs-utils autofs
+yum -y install nfs-utils
 ```
 Создаем папку
 ```shell
-sudo mkdir -p /nfs_share/
+sudo mkdir /nfs_share/
 ```
-Монтируем шару с созданную папку
+Монтируем шару в созданную папку
 ```shell
-mount -t nfs -o proto=udp 192.168.10.30:/nfs_share /nfs_share
-```
-Создаем 2ва файла с настройками для automount
-```shell
-echo -e '\n[Unit]' \
-        '\nDescription="NFS automount"' \
-        '\nRequires=network-online.target' \
-        '\nAfter=network-online.service' \
-        '\n[Mount]' \
-        '\nWhat=192.168.10.30:/nfs_share/' \
-        '\nWhere=nfs_share' \
-        '\nType=nfs' \
-        '\nDirectoryMode=0755' \
-        '\nOptions=rw,noatime,noauto,x-systemd.automount,noexec,nosuid,proto=udp,vers=3' \
-        '\n[Install]' \
-        '\nWantedBy=multi-user.target' \
-        '\n' | tee /etc/systemd/system/nfs_share.automount
-echo -e '\n[Unit]' \
-        '\nDescription="NFS mount"' \
-        '\nRequires=network-online.target' \
-        '\nAfter=network-online.service' \
-        '\n[Automount]' \
-        '\nWhere=/nfs_share' \
-        '\nTimeoutIdleSec=10' \
-        '\n[Install]' \
-        '\nWantedBy=multi-user.target' \
-        '\n' | tee /etc/systemd/system/mnt-nfs_share.mount
-```
-
-Запуск сервиса автомонтирования
-```shell
-systemctl enable nfs_share.automount
-systemctl start nfs_share.automount
+cp /etc/fstab /etc/fstab.bak
+echo "192.168.10.30:/nfs_share/ /nfs_share/ nfs vers=3,proto=udp,noauto,x-systemd.automount 0 0" >> /etc/fstab #mount -t nfs -o proto=udp 192.168.10.30:/nfs_share /nfs_share
+systemctl daemon-reload
+systemctl restart remote-fs.target #mount |grep nfs_share, df -h - проверяем корректность монтирования
 ```
 
 ### Процедура тестирования
-Дожидаемся создания виртуальных машин и отработки скриптов.  
+Выключаем vm, после чего выполняем ключение тачек, дожидаемся создания виртуальных машин и отработки скриптов.  
 Подключаемся к клиентской машине и проверяем начилие файла test_server_file.txt
 ```shell
 vagrant up
 ```
-Подключаемся к клиентской машине и серверной машине и проверяем начилие файла test_server_file.txt
+Подключаемся к клиентской машине и серверной машине и проверяем начилие файла test_nfs_file.txt
+
 ```shell
 vagrant ssh nfsc
 [vagrant@nfsc ~]$ cd /nfs_share/upload/
@@ -124,6 +98,6 @@ vagrant ssh nfsc
 vagrant ssh nfss
 [vagrant@nfss ~]$ cd /nfs_share/upload/
 [vagrant@nfss upload]$ cat test_server_file.txt
+[vagrant@nfss upload]$ vim test_server_file.txt
 ```
-
-Также проверяем и в обратную сторону.
+Также проверяем и в обратную сторону возможность изменения файла и его доступность.
