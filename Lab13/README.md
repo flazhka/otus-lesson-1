@@ -19,13 +19,13 @@ README с описанием каждого решения (скриншоты �
 ## 1. Запустить nginx на нестандартном порту 3-мя разными способами
 !Была обнаружена ошибка при запуске Vagrantfile.  
     
-    a. Создал Vagrantfile согласно представленному в методичке по домашнему заданию. В процессе создания ВМ selinux появилась ошибка SELinux, не позволяющая перевести работу nginx на нестандартный порт.
+Создал Vagrantfile согласно представленному в методичке по домашнему заданию. В процессе создания ВМ selinux появилась ошибка SELinux, не позволяющая перевести работу nginx на нестандартный порт.
 ```
- selinux: Job for nginx.service failed because the control process exited with error code. See "systemctl status nginx.service" and "journalctl -xe" for details.
+selinux: Job for nginx.service failed because the control process exited with error code. See "systemctl status nginx.service" and "journalctl -xe" for details.
 ```
-Были доустановлен пакет: policycoreutils-python.
+Был доустановлен пакет: policycoreutils-python.
 
-2. Проверил отключенный firewalld и корректность конфигов nginx:
+2. Проверил отключенный firewalld и корректность конфигов nginx.
 ```
 [root@selinux ~]# systemctl status firewalld
 ● firewalld.service - firewalld - dynamic firewall daemon
@@ -38,7 +38,7 @@ nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
 nginx: configuration file /etc/nginx/nginx.conf test is successful
 ```
 
-3. Проверил режим работы SELinux: getenforce
+3. Проверил режим работы SELinux: getenforce.
 ```
 [root@selinux ~]# getenforce
  Enforcing
@@ -64,7 +64,7 @@ type=AVC msg=audit(1699189310.904:824): avc:  denied  { name_bind } for  pid=285
 ```
 Утилита audit2why показывает почему трафик блокируется. Исходя из вывода утилиты нужно поменять параметр nis_enabled.
 
-3. Включил параметр nis_enabled, перезапустил nginx, проверил статус:
+3. Включил параметр nis_enabled, перезапустил nginx, проверил статус.
 ```
 [root@selinux ~]# setsebool -P nis_enabled on
 [root@selinux ~]# systemctl restart nginx
