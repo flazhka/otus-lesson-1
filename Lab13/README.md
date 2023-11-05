@@ -260,10 +260,22 @@ Resolving deltas: 100% (140/140), done.
 Развернул 2 виртуальные машины ns01 и client, с помощью vagrant: vagrant up  
 После того, как стенд развернулся, провериа ВМ с помощью команды: vagrant status
 
-3. Создал виртуальные машины ns01 и client, склонированные с репозитория.
-
-4. Попробовал внести изменения в зону, получил сл. ошибку.
+3. Создал виртуальные машины ns01 и client, склонированные с репозитория. Выполнил проверку состояния vm.
 ```
+administrator@lablotus01:~/otus_vm/Lab13/otus-linux-adm/selinux_dns_problems$ vagrant status
+
+Current machine states:
+ns01                      running (virtualbox)
+client                    running (virtualbox)
+```
+4. На клиенте попробовал внести изменения в зону, получил сл. ошибку.
+```
+administrator@lablotus01:~/otus_vm/Lab13/otus-linux-adm/selinux_dns_problems$ vagrant ssh client
+###############################
+### Welcome to the DNS lab! ###
+###############################
+...
+
 [vagrant@client ~]$ nsupdate -k /etc/named.zonetransfer.key 
 > 192.168.50.10
 incorrect section name: 192.168.50.10
@@ -274,12 +286,20 @@ incorrect section name: 192.168.50.10
 update failed: SERVFAIL
 > quit
 ```
-5. Проверил логи на сервере ns01. В логах audit на client логи отсутствуют.
+5. Выполнил проверку логов audit на client, логи отсутствуют.
 ```
+[vagrant@client ~]$ sudo -i
+[root@client ~]# cat /var/log/audit/audit.log | audit2why
+```
+6. Выполнил подключение к серверу ns01 и проверил логи.
+```
+administrator@lablotus01:~/otus_vm/Lab13/otus-linux-adm/selinux_dns_problems$ vagrant ssh ns01
+[vagrant@ns01 ~]$ sudo -i 
 [root@ns01 ~]# cat /var/log/audit/audit.log | grep dns
+
 type=AVC msg=audit(1667662732.397:1902): avc:  denied  { create } for  pid=5095 comm="isc-worker0000" name="named.ddns.lab.view1.jnl" scontext=system_u:system_r:named_t:s0 tcontext=system_u:object_r:etc_t:s0 tclass=file permissive=0
 ```
-6. Убедился, что контексты безопасности не совпадают.
+7. Убедился, что контексты безопасности не совпадают.
 ```
  [root@ns01 ~]# ls -laZ /etc/named
 drw-rwx---. root named system_u:object_r:etc_t:s0       .
@@ -290,12 +310,17 @@ drw-rwx---. root named unconfined_u:object_r:etc_t:s0   dynamic
 -rw-rw----. root named system_u:object_r:etc_t:s0       named.dns.lab.view1
 -rw-rw----. root named system_u:object_r:etc_t:s0       named.newdns.lab
 ```
-7. Поменял контекст безопасности на корректный.
+
+8. Посмотрел в каком каталоги должны лежать, файлы, чтобы на них распространялись правильные политики SELinux.
+```
+[root@ns01 ~]# sudo semanage fcontext -l | grep named
+/etc/rndc.*              regular file       system_u:object_r:named_conf_t:s0 
+/var/named(/.*)?         all files          system_u:object_r:named_zone_t:s0 
+...
+```
+9. Поменял контекст безопасности на корректный и убедился, что контекст безопасности корректный.
 ```
 [root@ns01 ~]# chcon -R -t named_zone_t /etc/named
-```
-8. Убедился, что контекст безопасности корректный.
-```
 [root@ns01 ~]# ls -laZ /etc/named
 drw-rwx---. root named system_u:object_r:named_zone_t:s0 .
 drwxr-xr-x. root root  system_u:object_r:etc_t:s0       ..
@@ -305,7 +330,7 @@ drw-rwx---. root named unconfined_u:object_r:named_zone_t:s0 dynamic
 -rw-rw----. root named system_u:object_r:named_zone_t:s0 named.dns.lab.view1
 -rw-rw----. root named system_u:object_r:named_zone_t:s0 named.newdns.lab
 ```
-9. Обновление зоны прошло успешно.
+9. Пробую снова внести изменения с клиента. Обновление зоны прошло успешно.
 ```
 [root@client ~]# nsupdate -k /etc/named.zonetransfer.key 
 > server 192.168.50.10
@@ -336,20 +361,30 @@ ns01.dns.lab.           3600    IN      A       192.168.50.10
 ;; MSG 
 ```
 10. Перезапустил, настройки сохранились.
+[root@client ~]# dig @192.168.50.10 www.ddns.lab
+; <<>> DiG 9.11.4-P2-RedHat-9.11.4-26.P2.el7_9.15 <<>> @192.168.50.10 www.ddns.lab
+; (1 server found)
+;; global options: +cmd
+;; Got answer:
+;; ->>HEADER<<- opcode: QUERY, status: NXDOMAIN, id: 12484
+;; flags: qr aa rd ra; QUERY: 1, ANSWER: 0, AUTHORITY: 1, ADDITIONAL: 1
+;; OPT PSEUDOSECTION:
+; EDNS: version: 0, flags:; udp: 4096
+;; QUESTION SECTION:
+;www.ddns.lab.			IN	A
+;; AUTHORITY SECTION:
+ddns.lab.		600	IN	SOA	ns01.dns.lab. root.dns.lab. 2711201407 3600 600 86400 600
+
+;; Query time: 5 msec
+;; SERVER: 192.168.50.10#53(192.168.50.10)
+;; WHEN: Sun Nov 05 21:11:29 UTC 2023
+;; MSG SIZE  rcvd: 91
+
 11. Причина неработоспособности механизма заключалась в том, что SELinux блокировал доступ к обновлению файлов на сервере ns01 для DNS, а также к некоторым файлам, к которым DNS обращается в процессе работы. Данную проблему можно решить двумя способами:
 
-    поменять контекст безопасности (было продемонстрировано)
-    скомпилировать новые модули для selinux и применить их в ядре (опробовано).
-
-12. Установил пакет settroubleshoot-server, проанализировал audit.log на ns01. Программа предлагает следующее решение проблемы: скомпилировать новые модули для SELinux my-iscworker.pp
-
-13. Модули скомпилированы и добавлены в ядро. Ошибки в ВМ по сервису DNS отсутствуют.
-
-
-
-
-
-
+ - Поменять контекст безопасности (было продемонстрировано)
+ - С помошью audit2allow создать разрешающий модуль (Не безопастно)
+ - Отключение SELinux (Не безопастно)
 
 
 
