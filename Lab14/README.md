@@ -57,11 +57,8 @@ e42454a45641   flazhka/nginx_image:image01   "nginx -g 'daemon of…"   27 secon
     OTUS HomeWork by Docker
   </body>
 ```
-
-
 ## 4. Публикация собранного образа в docker hub
-
-- Выполняю подключение к docker hub `docker login`, вводим логин и пароль от аккаунта.
+- Выполняю подключение к docker hub `docker login`, вводим логин и пароль от аккаунта
 ```s
 [root@nginx vagrant]# docker login
 Log in with your Docker ID or email address to push and pull images from Docker Hub. If you don't have a Docker ID, head over to https://hub.docker.com/ to create one.
