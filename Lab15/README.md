@@ -80,7 +80,7 @@ $ systemctl status prometheus
 ```
 
 Выполняю проверку работоспособности Prometheus, логинуюсь на сервис prometheus: `http://Server-IP:9090/graph`
-
+![alt text](/Lab15/01.png?raw=true "Screenshot1")
 
 ### Установка Node Exporter
 ```sh
@@ -128,13 +128,23 @@ static_configs:
 $ systemctl restart prometheus
 ```
 http://Server-IP:9090/targets
-![alt text](/Lab15/01.png?raw=true "Screenshot1")
+![alt text](/Lab15/02.png?raw=true "Screenshot2")
+
+### Установка Grafana
+
+Скачать grafana-enterprise-9.5.2-1.x86_64.rpm через VPN и поместить на сервер
+
+```sh
+$ yum -y install grafana-enterprise-9.5.2-1.x86_64.rpm
+# Стартуем сервис
+$ systemctl daemon-reload
+$ systemctl start grafana-server
+```
+
+http://Server-IP:9090/targets
+![alt text](/Lab15/03.png?raw=true "Screenshot3")
+
+### Интеграция с Prometheus
 
 
-Для решения использован Vagrant в сочетании с ansible. Установка prometheus, node_exporter, grafana производится из бинарных файлов по техническим причинам. В каталог ansible/files/distrib необходимо скопировать файлы:
 
-    prometheus
-    node_exporter
-    grafana-9.3.2-1.x86_64.rpm
-
-После установки ПО, из резервной копии в каталоге ansible/files/backup восстанавливается преднастроенная БД Grafana, с требуемым dashboard.
