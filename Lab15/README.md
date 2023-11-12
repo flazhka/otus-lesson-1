@@ -128,7 +128,7 @@ static_configs:
 $ systemctl restart prometheus
 ```
 http://Server-IP:9090/targets
-[alt text](/Lab15/01.png?raw=true "Screenshot1")
+![alt text](/Lab15/01.png?raw=true "Screenshot1")
 
 
 Для решения использован Vagrant в сочетании с ansible. Установка prometheus, node_exporter, grafana производится из бинарных файлов по техническим причинам. В каталог ansible/files/distrib необходимо скопировать файлы:
