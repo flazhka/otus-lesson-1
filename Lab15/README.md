@@ -79,7 +79,7 @@ $ systemctl start prometheus
 $ systemctl status prometheus
 ```
 
-Выполняю проверку работоспособности Prometheus, логинуюсь на сервис prometheus: `http://localhost:9090/graph`
+Выполняю проверку работоспособности Prometheus, логинуюсь на сервис prometheus: `http://192.168.10.170:9090/graph`
 ![alt text](/Lab15/01.png?raw=true "Screenshot1")
 
 ### Установка Node Exporter
@@ -138,7 +138,7 @@ $ systemctl daemon-reload
 $ systemctl start grafana-server
 ```
 
-http://localhost:3000/login
+http://192.168.10.170:3000/login
 ![alt text](/Lab15/03.png?raw=true "Screenshot3")
 
 ### Настройка 
@@ -150,6 +150,6 @@ http://localhost:3000/login
 
 Для решения использован Vagrant в сочетании с описанными в лекции шагами развертывания. 
 
-http://localhost:9090/
+http://192.168.10.170:3000/
 ![alt text](/Lab15/04.png?raw=true "Screenshot3")
 
