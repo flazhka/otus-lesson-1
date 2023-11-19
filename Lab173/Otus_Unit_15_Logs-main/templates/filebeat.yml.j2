@@ -1,0 +1,11 @@
+filebeat.inputs:
+
+- type: filestream
+  enabled: true
+
+  paths:
+    - /var/log/nginx/*.log
+    - /var/log
+
+output.logstash:
+  hosts: ["192.168.50.11:5044"]

@@ -79,7 +79,6 @@ $ systemctl daemon-reload
 $ systemctl start prometheus
 $ systemctl status prometheus
 ```
-
 Выполняю проверку работоспособности Prometheus, логинуюсь на сервис prometheus: `http://192.168.10.170:9090/graph`
 ![alt text](/Lab15/01.png?raw=true "Screenshot1")
 
@@ -129,28 +128,19 @@ static_configs:
 $ systemctl restart prometheus
 ```
 ### Установка Grafana
-
 Скачать grafana-enterprise-9.5.2-1.x86_64.rpm через VPN и поместить на сервер
-
 ```sh
 $ yum -y install grafana-enterprise-9.5.2-1.x86_64.rpm
 # Стартуем сервис
 $ systemctl daemon-reload
 $ systemctl start grafana-server
 ```
-
 http://192.168.10.170:3000/login
 ![alt text](/Lab15/03.png?raw=true "Screenshot3")
-
 ### Настройка 
-
 Шаги по настройке интеграции Prometheus и создания Dashboard взяты из лекции.
-
-
 ### Мониторинг
-
 Для решения использован Vagrant в сочетании с описанными в лекции шагами развертывания. На сервере были запущены Promehteus port:9090 и Grafana port:3000.
-
 http://192.168.10.170:3000/
 ![alt text](/Lab15/04.png?raw=true "Screenshot3")
 

@@ -1,0 +1,12 @@
+{
+    "ansible.python.interpreterPath": "c:\\Users\\Admin\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+    "python.testing.unittestArgs": [
+        "-v",
+        "-s",
+        "./Lab17",
+        "-p",
+        "*test.py"
+    ],
+    "python.testing.pytestEnabled": false,
+    "python.testing.unittestEnabled": true
+}

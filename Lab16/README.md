@@ -104,3 +104,27 @@ Connection to 192.168.56.20 closed.
 ```
 Как видно, залогиниться в субботу можно только пользователю из группы admin.
 
+#### Дать пользователю права на докер
+В данном случае считаю, что Docker уже установлен на сервере.
+1. Создаём пользователя, задаём пароль. Группа docker уже создана в процессе установки docker.
+```
+useradd otusadm
+echo "Otus2023!" | sudo passwd --stdin otusadm
+```
+2. Пользователя otusadm добавляем в группу docker и дадим ему права для возможности рестарта сервиса путём редактирования /etc/sudoers через visudo.
+```
+usermod -aG docker otusadm
+sudo visudo
+```
+3. В  файл добавить строку
+```
+%otusadm ALL=NOPASSWD: /bin/systemctl restart docker.service
+```
+4. Затем выполнить
+```
+chmod 0440 /etc/sudoers.d/vagrant
+```
+5. Выполним перезапуск сервиса docker 
+```
+systemctl restart docker
+```
