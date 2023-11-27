@@ -1,0 +1,19 @@
+---
+
+- name: Set timezone to Europe/Moscow
+  timezone:
+    name: Europe/Moscow
+
+- name: copy rsyslog config
+  template: 
+    src: rsyslog.conf.j2 
+    dest: /etc/rsyslog.conf 
+    mode: 0644
+  notify: Restart Rsyslog
+  
+- name: Open TCP port 60 on auditd
+  lineinfile:
+    path: /etc/audit/auditd.conf
+    regexp: '^tcp_listen_port.*'
+    line: tcp_listen_port = 60
+  notify: Restart auditd

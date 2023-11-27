@@ -1,0 +1,112 @@
+#################
+#### MODULES ####
+#################
+
+module(
+    load="imuxsock"
+    sysSock.use="off"
+    sysSock.name="/run/systemd/journal/syslog"
+    sysSock.RateLimit.Interval="0"
+)
+#module(load="immark")  # provides --MARK-- message capability
+
+# provides UDP syslog reception
+module(load="imudp")
+input(type="imudp" port="514")
+
+# provides TCP syslog reception
+module(load="imtcp")
+input(type="imtcp" port="514")
+
+# provides kernel logging support and enable non-kernel klog messages
+module(load="imklog" permitnonkernelfacility="on")
+
+module(load="imfile" mode="inotify")
+
+module(
+    load="imjournal"
+    IgnorePreviousMessages="on"
+    Ratelimit.Interval="100"
+    Ratelimit.Burst="30000"
+    StateFile="imjournal.state"
+)
+
+###########################
+#### GLOBAL DIRECTIVES ####
+###########################
+
+#
+# Use traditional timestamp format.
+# To enable high precision timestamps, comment out the following line.
+#
+$ActionFileDefaultTemplate RSYSLOG_TraditionalFileFormat
+
+# Filter duplicated messages
+$RepeatedMsgReduction on
+
+#
+# Set the default permissions for all log files.
+#
+$FileOwner syslog
+$FileGroup adm
+$FileCreateMode 0640
+$DirCreateMode 0755
+$Umask 0022
+$PrivDropToUser syslog
+$PrivDropToGroup syslog
+
+$WorkDirectory /var/spool/rsyslog
+
+$IncludeConfig /etc/rsyslog.d/*.conf[PROD] root@msk2-minio06 a.riabtsev [#] vit /etc/rsyslog.conf
+Command 'vit' not found, but can be installed with:
+apt install vit
+[PROD] root@msk2-minio06 a.riabtsev [#] vi /etc/rsyslog.conf
+# provides TCP syslog reception
+#module(load="imtcp")
+#input(type="imtcp" port="514")
+
+# provides kernel logging support and enable non-kernel klog messages
+module(load="imklog" permitnonkernelfacility="on")
+
+module(load="imfile" mode="inotify")
+
+module(
+    load="imjournal"
+    IgnorePreviousMessages="on"
+    Ratelimit.Interval="100"
+    Ratelimit.Burst="30000"
+    StateFile="imjournal.state"
+)
+
+###########################
+#### GLOBAL DIRECTIVES ####
+###########################
+
+#
+# Use traditional timestamp format.
+# To enable high precision timestamps, comment out the following line.
+#
+$ActionFileDefaultTemplate RSYSLOG_TraditionalFileFormat
+
+# Filter duplicated messages
+$RepeatedMsgReduction on
+
+#
+# Set the default permissions for all log files.
+#
+$FileOwner syslog
+$FileGroup adm
+$FileCreateMode 0640
+$DirCreateMode 0755
+$Umask 0022
+$PrivDropToUser syslog
+$PrivDropToGroup syslog
+
+$WorkDirectory /var/spool/rsyslog
+
+$IncludeConfig /etc/rsyslog.d/*.conf
+
+#Add remote logs
+$template RemoteLogs,"/var/log/rsyslog/%HOSTNAME%/%PROGRAMNAME%.log"
+*.* ?RemoteLogs
+& ~

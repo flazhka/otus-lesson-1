@@ -1,0 +1,8 @@
+---
+- name: Configuration syslog server
+  hosts: all
+  become: yes
+  
+  roles:
+    - { role: web, when: ansible_hostname == 'web' }
+    - { role: log, when: ansible_hostname == 'log' }

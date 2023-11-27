@@ -1,0 +1,9 @@
+---
+
+- name: Restart Rsyslog
+  service: 
+    name: rsyslog 
+    state: restarted
+
+- name: Restart auditd
+  command: sytemctl restart auditd
