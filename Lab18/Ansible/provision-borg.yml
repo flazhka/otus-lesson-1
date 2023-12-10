@@ -1,0 +1,188 @@
+---
+
+#################################  Config all servers   ##########################################
+- name: Config Servers
+  hosts: all
+  gather_facts: no
+  become: true
+
+  tasks:
+    - name: Install EPEL Repo package from standart repo
+      yum:
+        name: epel-release
+        state: present
+
+    - name: Set timezone to Europe/Moscow
+      timezone:
+        name: Europe/Moscow
+    
+    - name: Restart chronyd
+      service:
+        name: chronyd
+        state: restarted
+
+    - name: install soft
+      yum:
+        name: 
+          - borgbackup
+          - expect
+          - mc
+          - nano
+        state: present
+
+#################################  Config Borg Server    ##########################################
+
+- name: Config Borg Server
+  hosts: server-borg
+  gather_facts: no
+  become: true        
+
+  tasks:
+    - name: Create a new ext4 primary partition
+      parted:
+        device: /dev/sdb
+        number: 1
+        state: present
+        fs_type: ext4
+
+    - name: Create ext4 filesystem on /dev/sdb1
+      filesystem:
+        fstype: ext4
+        dev: /dev/sdb1        
+
+    - name: Add the user 'borg'
+      user:
+        name: borg
+        comment: backup user
+        uid: 1001
+
+    - name: Create a directory /var/backup
+      file:
+        path: /var/backup
+        state: directory
+        mode: '0755'
+        owner: borg
+        group: borg
+
+    - name: Mount up /var/backup
+      mount:
+        path: /var/backup
+        src: /dev/sdb1
+        fstype: ext4
+        state: mounted
+
+    - name: remove directory /var/backup/lost+found
+      file:
+        path: /var/backup/lost+found
+        state: absent
+
+    - name: Change right on the folder /var/backup/
+      shell: 'chown borg:borg /var/backup/'
+
+    - name: Create a directory /home/borg/.ssh
+      file:
+        path: /home/borg/.ssh
+        state: directory
+        mode: '0700'
+        owner: borg
+        group: borg
+
+    - name: copy authorized_keys
+      copy:
+        src: files/server/authorized_keys
+        dest: /home/borg/.ssh/authorized_keys
+        owner: borg
+        group: borg
+        mode: '0600'      
+
+#################################  Config Borg Client   ##########################################        
+
+- name: Config Borg Client
+  hosts: client-borg
+  gather_facts: no
+  become: true
+
+  tasks:
+    - name: Create a directory /root/.ssh
+      file:
+        path: /root/.ssh
+        state: directory
+        mode: '0700'
+        owner: root
+        group: root   
+
+    - name: copy id_rsa
+      copy:
+        src: files/client/id_rsa
+        dest: /root/.ssh/id_rsa
+        owner: root
+        group: root
+        mode: '0600'
+
+    - name: copy id_rsa.pub
+      copy:
+        src: files/client/id_rsa.pub
+        dest: /root/.ssh/id_rsa.pub
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: create ssh_client_config.j2
+      template:
+        src: templates/ssh_client_config.j2
+        dest: /root/.ssh/config
+        owner: root
+        group: root
+        mode: '0600'
+
+    - name: copy create_repo.sh
+      copy:
+        src: files/client/create_repo.sh
+        dest: /root/create_repo.sh
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: Execute create_repo.sh
+      command: sh /root/create_repo.sh
+      
+    - name: Create log file borg.log
+      shell: "touch /var/log/borg.log"
+
+    - name: Create config file rsyslog for backup
+      template:
+        src: templates/rsyslog_borg_backup_conf.j2
+        dest: /etc/rsyslog.d/borg_backup.conf      
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Restart rsyslog
+      shell: "systemctl restart rsyslog"
+
+    - name: Create service for backups
+      template:
+        src: templates/borg-backup_service.j2
+        dest: /etc/systemd/system/borg-backup.service  
+
+    - name: Create timer for backup service
+      template:
+        src: templates/borg-backup_timer.j2
+        dest: /etc/systemd/system/borg-backup.timer
+
+    - name: Enable borg-backup.timer
+      shell: "systemctl enable borg-backup.timer"
+
+    - name: Start services borg-backup.timer
+      shell: "systemctl start borg-backup.timer"         
+
+    - name: Display status borg-backup.timer
+      shell: 'systemctl status borg-backup.timer'
+      register: command_output
+  
+    - name: Print to console - status borg-backup.timer
+      debug: msg="{{command_output.stdout}}"
+
+    - name: Start services borg-backup.service
+      shell: "systemctl start borg-backup.service"
+

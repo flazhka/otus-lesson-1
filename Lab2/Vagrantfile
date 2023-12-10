@@ -41,6 +41,9 @@ Vagrant.configure("2") do |config| #Циклы создание vm
           box.vm.box = boxconfig[:box_name]
           box.vm.host_name = boxname.to_s
           box.vm.network "private_network", ip: boxconfig[:ip_addr]
+
+
+          
           box.vm.provider :virtualbox do |vb|
             vb.customize ["modifyvm", :id, "--memory", "1024"]
             needsController = false
