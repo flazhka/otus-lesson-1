@@ -1,0 +1,114 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure(2) do |config|
+    config.vm.box = "generic/oracle9"
+    
+    config.vm.provider "virtualbox" do |v|
+      v.memory = 256
+      v.cpus = 1
+    end
+  
+    config.vm.define "inetRouter" do |inetRouter|
+      inetRouter.vm.hostname = "inetRouter"
+      inetRouter.vm.network "private_network", ip: '10.10.10.1', adapter: 2, netmask: "255.255.255.252", virtualbox__intnet: "router-net"
+      inetRouter.vm.provision "shell", inline: <<-SHELL
+      mkdir -p ~root/.ssh
+      cp ~vagrant/.ssh/auth* ~root/.ssh
+      echo "net.ipv4.conf.all.forwarding=1" >> /etc/sysctl.conf
+      sysctl -p
+      echo "DEFROUTE=no" >> /etc/sysconfig/network-scripts/ifcfg-eth0
+      ip route del default
+      systemctl restart NetworkManager.service 
+      echo "192.168.0.0/22 via 10.10.10.2" > /etc/sysconfig/network-scripts/route-eth1
+      echo "10.20.0.0/23 via 10.10.10.2" >> /etc/sysconfig/network-scripts/route-eth1
+      systemctl restart NetworkManager.service
+      SHELL
+    end
+
+    config.vm.define "centralRouter" do |centralRouter|
+      centralRouter.vm.hostname = "centralRouter"
+      centralRouter.vm.network "private_network", ip: '10.10.10.2', adapter: 2, netmask: "255.255.255.252", virtualbox__intnet: "router-net"
+      centralRouter.vm.network "private_network", ip: '10.10.10.2', adapter: 2, netmask: "255.255.255.252", virtualbox__intnet: "router-net"
+      centralRouter.vm.network "private_network", ip: '10.20.20.1', adapter: 4, netmask: "255.255.255.252", virtualbox__intnet: "router-net1"
+      centralRouter.vm.network "private_network", ip: '10.30.30.1', adapter: 6, netmask: "255.255.255.252", virtualbox__intnet: "router-net2"
+      centralRouter.vm.network "private_network", ip: '192.168.0.1', adapter: 3, netmask: "255.255.255.240", virtualbox__intnet: "dir-net"
+      centralRouter.vm.network "private_network", ip: '192.168.0.33', adapter: 5, netmask: "255.255.255.240", virtualbox__intnet: "hw-net"
+      centralRouter.vm.network "private_network", ip: '192.168.0.65', adapter: 7, netmask: "255.255.255.192", virtualbox__intnet: "wifi-net"
+      centralRouter.vm.provision "shell", inline: <<-SHELL
+      mkdir -p ~root/.ssh
+      cp ~vagrant/.ssh/auth* ~root/.ssh
+      SHELL
+    end
+
+    config.vm.define "office1Router" do |office1Router|
+      office1Router.vm.hostname = "office1Router"
+      office1Router.vm.network "private_network", ip: '10.20.20.2', adapter: 2, netmask: "255.255.255.252", virtualbox__intnet: "router-net1"
+      office1Router.vm.network "private_network", ip: '192.168.2.129', adapter: 3, netmask: "255.255.255.192", virtualbox__intnet: "mgmt-net1"
+      office1Router.vm.network "private_network", ip: '192.168.2.65', adapter: 4, netmask: "255.255.255.192", virtualbox__intnet: "test-net1"
+      office1Router.vm.network "private_network", ip: '192.168.2.1', adapter: 5, netmask: "255.255.255.192", virtualbox__intnet: "dev-net1"
+      office1Router.vm.network "private_network", ip: '192.168.2.193', adapter: 6, netmask: "255.255.255.192", virtualbox__intnet: "hw-net1"
+      office1Router.vm.provision "shell", inline: <<-SHELL
+      echo "net.ipv4.conf.all.forwarding=1" >> /etc/sysctl.conf
+      sysctl -p
+      echo "DEFROUTE=no" >> /etc/sysconfig/network-scripts/ifcfg-eth0
+      ip route del default
+      systemctl restart NetworkManager.service
+      echo "GATEWAY=10.20.20.1" >> /etc/sysconfig/network-scripts/ifcfg-eth1
+      systemctl restart NetworkManager.service
+      SHELL
+    end
+
+    config.vm.define "office2Router" do |office2Router|
+      office2Router.vm.hostname = "office2Router"
+      office2Router.vm.network "private_network", ip: '10.30.30.2', adapter: 2, netmask: "255.255.255.252", virtualbox__intnet: "router-net2"
+      office2Router.vm.network "private_network", ip: '192.168.1.193', adapter: 3, netmask: "255.255.255.192", virtualbox__intnet: "hw-net2"
+      office2Router.vm.network "private_network", ip: '192.168.1.1', adapter: 4, netmask: "255.255.255.128", virtualbox__intnet: "dev-net2"
+      office2Router.vm.network "private_network", ip: '192.168.1.129', adapter: 5, netmask: "255.255.255.192", virtualbox__intnet: "test-net2"
+      office2Router.vm.provision "shell", inline: <<-SHELL
+      echo "net.ipv4.conf.all.forwarding=1" >> /etc/sysctl.conf
+      sysctl -p
+      echo "DEFROUTE=no" >> /etc/sysconfig/network-scripts/ifcfg-eth0 
+      ip route del default
+      systemctl restart NetworkManager.service
+      echo "GATEWAY=10.30.30.1" >> /etc/sysconfig/network-scripts/ifcfg-eth1
+      systemctl restart NetworkManager.service
+      SHELL
+    end
+
+    config.vm.define "centralServer" do |centralServer|
+      centralServer.vm.hostname = "centralServer"
+      centralServer.vm.network "private_network", ip: '192.168.0.40', adapter: 2, netmask: "255.255.255.240", virtualbox__intnet: "hw-net"
+      centralServer.vm.provision "shell", inline: <<-SHELL
+      echo "DEFROUTE=no" >> /etc/sysconfig/network-scripts/ifcfg-eth0
+      ip route del default
+      systemctl restart NetworkManager.service
+      echo "GATEWAY=192.168.0.33" >> /etc/sysconfig/network-scripts/ifcfg-eth1
+      systemctl restart NetworkManager.service
+      SHELL
+    end
+
+    config.vm.define "office1Server" do |office1Server|
+      office1Server.vm.hostname = "office1Server"
+      office1Server.vm.network "private_network", ip: '192.168.2.200', adapter: 2, netmask: "255.255.255.192", virtualbox__intnet: "hw-net1"
+      office1Server.vm.provision "shell", inline: <<-SHELL
+      echo "DEFROUTE=no" >> /etc/sysconfig/network-scripts/ifcfg-eth0
+      ip route del default
+      systemctl restart NetworkManager.service
+      echo "GATEWAY=192.168.2.193" >> /etc/sysconfig/network-scripts/ifcfg-eth1
+      systemctl restart NetworkManager.service
+      SHELL
+    end
+
+    config.vm.define "office1Server" do |office1Server|
+      office1Server.vm.hostname = "office1Server"
+      office1Server.vm.network "private_network", ip: '192.168.1.200', adapter: 2, netmask: "255.255.255.192", virtualbox__intnet: "hw-net2"
+      office1Server.vm.provision "shell", inline: <<-SHELL
+      echo "DEFROUTE=no" >> /etc/sysconfig/network-scripts/ifcfg-eth0 
+      ip route del default
+      systemctl restart NetworkManager.service
+      echo "GATEWAY=192.168.1.193" >> /etc/sysconfig/network-scripts/ifcfg-eth1
+      systemctl restart NetworkManager.service
+      SHELL
+    end
+  end
