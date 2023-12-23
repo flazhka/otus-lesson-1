@@ -22,7 +22,7 @@ https://github.com/erlong15/otus-linux/tree/network
 - 192.168.0.64/26    - wifi
 
 3. Итого должны получиться следующие сервера:  
-![Alt text](image.png)
+![Alt text](https://github.com/flazhka/otuslab-homework/blob/master/Lab19/1.png)
 inetRouter  
 centralRouter  
 office1Router  
