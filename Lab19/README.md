@@ -26,7 +26,9 @@ Office1 ---\
 Office2----/
 
 3. Итого должны получиться следующие сервера:  
-![Alt text](https://github.com/flazhka/otuslab-homework/blob/master/Lab19/1.png)
+
+![Архитектура сети](https://github.com/flazhka/otuslab-homework/blob/master/Lab19/1.png)  
+
 inetRouter  
 centralRouter  
 office1Router  
