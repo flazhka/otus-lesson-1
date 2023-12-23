@@ -21,7 +21,7 @@ MACHINES = {
                 ]
   },
   :office1Router => {
-        :box_name => "centos/7",
+        :box_name => "ubuntu/focal64",
         :net => [
                    {ip: '10.20.20.2', adapter: 2, netmask: "255.255.255.252", virtualbox__intnet: "router-net1"},
                    {ip: '192.168.2.129', adapter: 3, netmask: "255.255.255.192", virtualbox__intnet: "mgmt-net1"},
@@ -31,7 +31,7 @@ MACHINES = {
                 ]
   },
   :office2Router => {
-        :box_name => "centos/7",
+        :box_name => "debian/bullseye64",
         :net => [
                    {ip: '10.30.30.2', adapter: 2, netmask: "255.255.255.252", virtualbox__intnet: "router-net2"},
                    {ip: '192.168.1.193', adapter: 3, netmask: "255.255.255.192", virtualbox__intnet: "hw-net2"},
@@ -46,13 +46,13 @@ MACHINES = {
                 ]
   },
   :office1Server => {
-        :box_name => "centos/7",
+        :box_name => "ubuntu/focal64",
         :net => [
                    {ip: '192.168.2.200', adapter: 2, netmask: "255.255.255.192", virtualbox__intnet: "hw-net1"},
                 ]
   },
   :office2Server => {
-        :box_name => "centos/7",
+        :box_name => "debian/bullseye64",
         :net => [
                    {ip: '192.168.1.200', adapter: 2, netmask: "255.255.255.192", virtualbox__intnet: "hw-net2"},
                 ]
