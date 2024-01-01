@@ -41,8 +41,8 @@ DHCP (Dynamic Host Configuration Protocol) — протокол динамиче
 Deploy:  
 
 Меню загрузки:
-![alt text](/screenshots/1.png?raw=true "Screenshot1")
+![Screenshot1](/Lab20/screenshots/1.png?raw=true "Screenshot1")
 
 Далее выполняем выключение виртуальной машины, изменяем в настроках виртуальной машины загрузку с Network на Hard Disk и выполняем запуск. 
 Логинимся под root и смотрим версию OC.
-![alt text](/screenshots/2.png?raw=true "Screenshot2")
+![Screenshot2](/Lab20/screenshots/2.png?raw=true "Screenshot2")
