@@ -226,7 +226,7 @@ listening on enp0s8, link-type EN10MB (Ethernet), capture size 262144 bytes
 
 
 ```sh
-dima@Test-Ubuntu-1:~/otus/my-hw21/Ansible$ ansible-playbook provision.yml -t setup_ospf
+administrator@lablotus01:~/otus_vm/Lab22/Ansible$ ansible-playbook provision.yml -t setup_ospf
 
 router1# show ip route ospf
 Codes: K - kernel route, C - connected, S - static, R - RIP,
@@ -259,10 +259,39 @@ O   192.168.20.0/24 [110/100] is directly connected, enp0s10, weight 1, 00:01:03
 O>* 192.168.30.0/24 [110/200] via 10.0.11.1, enp0s9, weight 1, 00:00:23
 ```
 
-
+После изменения конфигурации на router2 проверю, как маршрутизацию пакетов, запустив также `ping` c `router1`.
 
 ```sh
-
-
-
+root@router1:~# ping -I 192.168.10.1 192.168.20.1
+PING 192.168.20.1 (192.168.20.1) from 192.168.10.1 : 56(84) bytes of data.
+64 bytes from 192.168.20.1: icmp_seq=1 ttl=63 time=1.31 ms
+64 bytes from 192.168.20.1: icmp_seq=2 ttl=63 time=0.827 ms
 ```
+
+На router2 запускаем tcpdump, для контроля трафика на порту `enp0s9`.
+
+```sh
+root@router2:~# tcpdump -i enp0s9
+tcpdump: verbose output suppressed, use -v or -vv for full protocol decode
+listening on enp0s9, link-type EN10MB (Ethernet), capture size 262144 bytes
+20:09:05.603486 IP 192.168.10.1 > router2: ICMP echo request, id 6, seq 6, length 64
+20:09:05.603528 IP router2 > 192.168.10.1: ICMP echo reply, id 6, seq 6, length 64
+20:09:05.785182 ARP, Request who-has 10.0.11.1 tell router2, length 28
+20:09:05.785551 ARP, Reply 10.0.11.1 is-at 08:00:27:4d:f1:f0 (oui Unknown), length 46
+20:09:05.787578 ARP, Request who-has router2 tell 10.0.11.1, length 46
+20:09:05.787592 ARP, Reply router2 is-at 08:00:27:e4:07:56 (oui Unknown), length 28
+20:09:06.605499 IP 192.168.10.1 > router2: ICMP echo request, id 6, seq 7, length 64
+20:09:06.605560 IP router2 > 192.168.10.1: ICMP echo reply, id 6, seq 7, length 64
+20:09:07.607223 IP 192.168.10.1 > router2: ICMP echo request, id 6, seq 8, length 64
+20:09:07.607285 IP router2 > 192.168.10.1: ICMP echo reply, id 6, seq 8, length 64
+20:09:08.608896 IP 192.168.10.1 > router2: ICMP echo request, id 6, seq 9, length 64
+20:09:08.608968 IP router2 > 192.168.10.1: ICMP echo reply, id 6, seq 9, length 64
+20:09:09.609567 IP 192.168.10.1 > router2: ICMP echo request, id 6, seq 10, length 64
+20:09:09.609621 IP router2 > 192.168.10.1: ICMP echo reply, id 6, seq 10, length 64
+^C
+14 packets captured
+14 packets received by filter
+```
+
+Из данного вывода видно, что теперь пакеты приходят и уходят через один интерфейс `enp0s9`, то есть трафик между `router1` и `router2` ходит через `router3`.
+
