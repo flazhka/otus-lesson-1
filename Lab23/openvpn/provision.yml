@@ -1,0 +1,4 @@
+---
+
+- import_playbook: install_ovpn.yml
+- import_playbook: check_ovpn.yml

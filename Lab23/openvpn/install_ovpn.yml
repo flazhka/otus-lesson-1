@@ -1,0 +1,98 @@
+---
+
+- name: Install_OPVN
+  hosts: all
+  #gather_facts: no
+  become: true
+
+  tasks:
+    - name: Install EPEL Repo package from standart repo
+      yum:
+        name: epel-release
+        state: present
+
+    - name: Set timezone to Europe/Moscow
+      timezone:
+        name: Europe/Moscow
+    
+    - name: Restart chronyd
+      service:
+        name: chronyd
+        state: restarted
+    
+    - name: install soft
+      yum:
+        name: 
+          - nano
+          - traceroute
+          - tcpdump
+          - net-tools
+          - openvpn
+          - easy-rsa
+        state: present
+
+    - name: copy server files
+      block:
+        - name: copy server key files 
+          template:
+            src: "{{ item }}" 
+            dest: /etc/openvpn/
+            owner: root
+            group: root
+            mode: 0600
+          loop:
+              - ca.crt
+              - ca.key
+              - server.key
+              - server.crt
+              - dh.pem
+
+        - name: copy server.conf file
+          template:
+            src: server.conf 
+            dest: /etc/openvpn/
+            owner: root
+            group: root
+            mode: 0644      
+
+        - name: copy client file to /etc/openvpn/client/
+          template:
+            src: client 
+            dest: /etc/openvpn/client/
+            owner: root
+            group: root
+            mode: 0644            
+      when: inventory_hostname == "server"
+      notify:
+        - restart ovpn
+
+    - name: copy client files
+      template:
+        src: "{{ item }}"
+        dest: /etc/openvpn/
+        owner: root
+        group: root
+        mode: 0600
+      loop:
+          - ca.crt
+          - client.crt
+          - client.key
+          - client.conf         
+      when: inventory_hostname == "client"
+      notify:
+        - restart ovpn_client             
+
+  handlers:
+    - name: restart ovpn
+      service:
+        name: openvpn@server
+        state: restarted
+        enabled: true
+
+    - name: restart ovpn_client
+      service:
+        name: openvpn@client
+        state: restarted
+        enabled: true
+
+        

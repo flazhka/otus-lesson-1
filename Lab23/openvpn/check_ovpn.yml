@@ -1,0 +1,42 @@
+---
+
+- name: Check_OVPN
+  hosts: all
+  #gather_facts: no
+  become: true
+
+  tasks:
+    - name: Check server routing
+      block:
+        - name: Display route table from server
+          shell: 'ip route'
+          register: command_output
+      
+        - name: Print to console - route table from server
+          debug: msg="{{command_output.stdout}}"
+
+        - name: Display ping to client network
+          shell: 'ping -c 4 172.16.20.1'
+          register: command_output_2
+      
+        - name: Print to console - ping to client network
+          debug: msg="{{command_output_2.stdout}}"          
+      when: inventory_hostname == "server"
+
+    - name: Check client routing
+      block:
+        - name: Display route table from client
+          shell: 'ip route'
+          register: command_output_3
+      
+        - name: Print to console - route table from server
+          debug: msg="{{command_output_3.stdout}}"
+
+        - name: Display ping to server network
+          shell: 'ping -c 4 172.16.10.1'
+          register: command_output_4
+      
+        - name: Print to console - ping to server network
+          debug: msg="{{command_output_4.stdout}}"       
+      when: inventory_hostname == "client"
+        

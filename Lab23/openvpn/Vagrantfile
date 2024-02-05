@@ -1,0 +1,62 @@
+# -*- mode: ruby -*-
+# vim: set ft=ruby :
+
+file_to_disk = './server-borg_disk.vdi'
+
+Vagrant.configure("2") do |config|
+    # Base VM OS configuration.
+    config.vm.box = "ubuntu/focal64"
+    config.vm.provider :virtualbox do |v|
+      v.memory = 512
+      v.cpus = 2
+    end
+
+    # Define two VMs with static private IP addresses.
+    boxes = [
+      { :name => "server",
+      :ip => "192.168.10.10",
+      :ip2 => "192.168.56.10",
+      :ip3 => "172.16.10.1",
+      },
+      { :name => "client",
+      :ip => "192.168.10.20",
+      :ip2 => "192.168.56.20",
+      :ip3 => "172.16.20.1",
+    }
+    ]
+
+    # Provision each of the VMs.
+      boxes.each do |opts|
+        config.vm.define opts[:name] do |config|
+          config.vm.hostname = opts[:name]
+          config.vm.network "private_network", ip: opts[:ip], virtualbox__intnet: "net_vpn"
+          config.vm.network "private_network", ip: opts[:ip2]
+
+          if opts[:name] == "server"
+            config.vm.network "private_network", ip: opts[:ip3], virtualbox__intnet: "server_net"
+          end
+
+          if opts[:name] == "client"
+            config.vm.network "private_network", ip: opts[:ip3], virtualbox__intnet: "client_net"
+          end
+
+          config.vm.provision "shell", inline: <<-SHELL
+            mkdir -p ~root/.ssh; cp ~vagrant/.ssh/auth* ~root/.ssh
+            sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/g' /etc/ssh/sshd_config
+            systemctl restart sshd
+            setenforce 0
+            sed -i "s/SELINUX=enforcing/SELINUX=disabled/" /etc/selinux/config
+          SHELL
+
+          if opts[:name] == "client"
+            config.vm.provision "ansible" do |ansible|
+              ansible.playbook = "provision.yml"
+              ansible.inventory_path = "inventories/inventory.yml"
+              ansible.host_key_checking = "false"
+              ansible.limit = "all"
+            end
+          end
+
+        end  
+      end
+end
