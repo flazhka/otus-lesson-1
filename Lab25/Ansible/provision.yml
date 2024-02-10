@@ -1,0 +1,199 @@
+---
+
+- name: Config Servers
+  hosts: Servers
+  #gather_facts: no
+  become: true
+
+#################################  Install soft   ##########################################
+  tasks:
+    - name: install soft
+      yum:
+        name: 
+          - nano
+          - traceroute
+          - tcpdump
+          - net-tools
+        state: present
+
+#################################  inetRouter Configuration   ##########################################
+    - name: Set up NAT on inetRouter
+      block:
+        - name: install iptables on inetRouter
+          yum:        
+            name:
+              - iptables
+              - iptables-services
+            state: present
+            update_cache: true
+              
+        - name: copy iptables config on inetRouter
+          template:
+            src: templates/iptables_inetRouter.j2
+            dest: /etc/sysconfig/iptables
+            owner: root
+            group: root
+            mode: 0600
+            
+        - name: start and enable iptables service on inetRouter
+          service:
+            name: iptables
+            state: restarted
+            enabled: true
+
+        - name: configure interface eth1
+          template:
+            src: team-eth1.j2
+            dest: /etc/sysconfig/network-scripts/ifcfg-eth1
+            owner: root
+            group: root
+            mode: 0644
+
+        - name: configure interface eth2
+          template:
+            src: team-eth2.j2
+            dest: /etc/sysconfig/network-scripts/ifcfg-eth2
+            owner: root
+            group: root
+            mode: 0644  
+
+        - name: configure interface team0
+          template:
+            src: team-team0.j2
+            dest: /etc/sysconfig/network-scripts/ifcfg-team0
+            owner: root
+            group: root
+            mode: 0644
+
+        - name: set up route on inetRouter team0
+          template:
+            src: inetRouter_route_team0.j2
+            dest: /etc/sysconfig/network-scripts/route-team0
+            owner: root
+            group: root
+            mode: 0644            
+
+        - name: restart network service on inetRouter
+          service:
+            name: network
+            state: restarted
+      when: inventory_hostname == "inetRouter"
+
+#################################  Routing Configuration on Routers   ##########################################
+    - name: set up forward packages across routers
+      sysctl:
+        name: net.ipv4.conf.all.forwarding
+        value: '1'
+        state: present
+      when: "'routers' in group_names"  
+
+#################################  centralRouter Configuration   ##########################################
+    - name: centralRouter Configuration
+      block:
+        - name: disable default route for centralRouter
+          lineinfile:
+            dest: /etc/sysconfig/network-scripts/ifcfg-eth0
+            line: DEFROUTE=no
+
+        - name: configure interface eth1
+          template:
+            src: team-eth1.j2
+            dest: /etc/sysconfig/network-scripts/ifcfg-eth1
+            owner: root
+            group: root
+            mode: 0644
+
+        - name: configure interface eth2
+          template:
+            src: team-eth2.j2
+            dest: /etc/sysconfig/network-scripts/ifcfg-eth2
+            owner: root
+            group: root
+            mode: 0644  
+
+        - name: configure interface team0
+          template:
+            src: team-team0.j2
+            dest: /etc/sysconfig/network-scripts/ifcfg-team0
+            owner: root
+            group: root
+            mode: 0644
+
+        - name: add default gateway for centralRouter
+          lineinfile:
+            dest: /etc/sysconfig/network-scripts/ifcfg-team0
+            line: GATEWAY=192.168.255.1                        
+
+        - name: configure interface eth3
+          template:
+            src: centralRouter-eth3.j2
+            dest: /etc/sysconfig/network-scripts/ifcfg-eth3
+            owner: root
+            group: root
+            mode: 0644
+
+        - name: configure interface vlan100
+          template:
+            src: centralRouter-vlan100.j2
+            dest: /etc/sysconfig/network-scripts/ifcfg-vlan100
+            owner: root
+            group: root
+            mode: 0644
+
+        - name: configure interface vlan101
+          template:
+            src: centralRouter-vlan101.j2
+            dest: /etc/sysconfig/network-scripts/ifcfg-vlan101
+            owner: root
+            group: root
+            mode: 0644                        
+
+        - name: restart network service on centralRouter
+          service:
+            name: network
+            state: restarted
+      when: inventory_hostname == "centralRouter"
+
+#################################  Clients-Servers Configuration   ##########################################
+    - name: Clients-Servers Configuration
+      block:
+        - name: disable default route for Clients-Servers
+          lineinfile:
+            dest: /etc/sysconfig/network-scripts/ifcfg-eth0
+            line: DEFROUTE=no
+
+        - name: configure interface eth1
+          template:
+            src: clients_servers-eth1.j2
+            dest: /etc/sysconfig/network-scripts/ifcfg-eth1
+            owner: root
+            group: root
+            mode: 0644                
+
+        - name: configure interface vlan100
+          template:
+            src: clients_servers-vlan100.j2
+            dest: /etc/sysconfig/network-scripts/ifcfg-vlan100
+            owner: root
+            group: root
+            mode: 0644
+          when: inventory_hostname == "testClient1" or inventory_hostname == "testServer1"
+
+        - name: configure interface vlan101
+          template:
+            src: clients_servers-vlan101.j2
+            dest: /etc/sysconfig/network-scripts/ifcfg-vlan101
+            owner: root
+            group: root
+            mode: 0644
+          when: inventory_hostname == "testClient2" or inventory_hostname == "testServer2"                       
+
+        - name: restart network service on Clients-Servers
+          service:
+            name: network
+            state: restarted
+      when: inventory_hostname == "testClient1" or inventory_hostname == "testServer1" or inventory_hostname == "testClient2" or inventory_hostname == "testServer2"
+      
+
+
+
