@@ -1,0 +1,4 @@
+ipa ansible_host=127.0.0.1 ansible_port=2222 ansible_private_key_file=.vagrant/machines/ipa.ipa.local/virtualbox/private_key
+[clients]
+client1 ansible_host=127.0.0.1 ansible_port=2200 ansible_private_key_file=.vagrant/machines/client1.ipa.local/virtualbox/private_key
+client2 ansible_host=127.0.0.1 ansible_port=2201 ansible_private_key_file=.vagrant/machines/client2.ipa.local/virtualbox/private_key

@@ -1,0 +1,88 @@
+---
+  - name: General setup
+    hosts: all
+    become: true
+    tasks:
+      - name: Synchronize datetime
+        ansible.builtin.copy:
+          src: /usr/share/zoneinfo/Europe/Moscow
+          dest: /etc/localtime
+      - name: Enable ntp
+        service:
+          name: chronyd
+          state: restarted
+          enabled: true
+      - name: Stop firewall
+        service:
+          name: firewalld
+          state: stopped
+          enabled: false
+      - name: Disable selinux
+        lineinfile:
+          path: /etc/selinux/config
+          regexp: '^SELINUX=enforcing'
+          line: SELINUX=disabled 
+      - name: Stop selinux
+        shell: setenforce 0
+      - name: Add host
+        lineinfile:
+          path: /etc/hosts
+          line: 192.168.57.10 srv.ipa.local ipa
+  - name: Server setup
+    hosts: srv
+    become: true
+    tasks:
+      - name: Enable ipv6
+        lineinfile:
+          path: /etc/sysctl.conf
+          regexp: '^net.ipv6.conf.all.disable_ipv6 = 1'
+          line: net.ipv6.conf.all.disable_ipv6 = 0
+      - name: Runing scripts
+        shell: |
+          sysctl -p
+          yum install -y @idm:DL1
+      - name: Install packages
+        yum:
+          name:
+          - ipa-server
+          - nano
+          state: latest
+          update_cache: true
+      - name: Install and configure freeipa server
+        command: |
+          ipa-server-install -U \
+          -r ipa.local \
+          -p otusotus \
+          -a otusotus \
+          --no-ntp \       
+      - name: Add ipa-client1
+        ipa_user:
+          name: user1_otus
+          givenname: User1
+          sn: Otus
+          password: 123456
+          loginshell: /bin/bash
+          ipa_host: srv.ipa.local
+          ipa_user: admin
+          ipa_pass: Xerox123&
+      - name: Add ipa-client2
+        ipa_user:
+          name: user2_otus
+          givenname: User2
+          sn: Otus
+          password: 123456
+          loginshell: /bin/sh
+          ipa_host: ipa.ipa.local
+          ipa_user: admin
+          ipa_pass: Xerox123&
+  - name: Clients setup
+    hosts: clients
+    become: true
+    tasks:
+      - name: Install freeipa client
+        yum:
+          name: freeipa-client
+          state: latest
+          update_cache: true
+      - name: Add host to freeipa server
+        shell: echo -e "yes\nyes" | ipa-client-install --mkhomedir --domain=ipa.local --server=ipa.ipa.local --no-ntp -p admin -w otusotus
