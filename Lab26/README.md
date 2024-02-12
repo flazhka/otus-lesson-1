@@ -21,9 +21,9 @@ Password for admin@ipa.local:
 
 [root@clientipa ~]# klist
 Ticket cache: KEYRING:persistent:0:0
-Default principal: admin@IPA.TEST
+Default principal: admin@ipa.local
 Valid starting       Expires              Service principal
-11.07.2022 19:17:32  12.07.2022 19:17:23  krbtgt/IPA.TEST@IPA.TEST
+11.07.2022 19:17:32  12.07.2022 19:17:23  krbtgt/ipa.local@ipa.local
 ```
 
 ```sh
@@ -38,7 +38,7 @@ Valid starting       Expires              Service principal
   Home directory: /home/admin
   GECOS: Administrator
   Login shell: /bin/bash
-  Principal alias: admin@IPA.TEST
+  Principal alias: admin@ipa.local
   User password expiration: 20221009160847Z
   UID: 227800000
   GID: 227800000
