@@ -158,15 +158,15 @@
       
       - name: Configure replication on the slave.
         mysql_replication:
-          mode: changeprimary
+          mode: changemaster
           master_host: 192.168.56.10
           master_user: repl
           master_password: "{{ repl_mysqlpass }}"
-          primary_auto_position: yes
+          master_auto_position: yes #
 
       - name: Start replica
         mysql_replication:
-          mode: startreplica    
+          mode: startslave 
     when: inventory_hostname == "mysqlslave"       
     tags:
       - slave
