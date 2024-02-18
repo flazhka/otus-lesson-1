@@ -155,7 +155,7 @@ test_base=#
 ```
 
 А также на slave можно посмотреть статус потоковой передачи командой `SELECT * FROM pg_stat_wal_receiver;`
-![repl](https://github.com/flazhka/otuslab-homework/Lab29/1.png)
+![repl](https://github.com/flazhka/otuslab-homework/blob/master/Lab29/1.png)
 
 
 - В качестве бэкапа базы была выбрана встроенная утилита - pg_dump. Добавлен скрипт, который бэкапит базу `test_base` и чистит бэкапы старше 7 дней. 
@@ -182,7 +182,6 @@ test_base=# \dt
 Did not find any relations.
 test_base=# 
 ```
-
 
 Востановление из бэкапа:
 ```sh
