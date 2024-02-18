@@ -1,0 +1,12 @@
+all:
+  hosts:
+    pgsqlmaster:
+      ansible_host: 192.168.56.30
+      ansible_port: 22
+      ansible_private_key_file: .vagrant/machines/pgsqlmaster/virtualbox/private_key
+
+    pgsqlslave:
+      ansible_host: 192.168.56.31
+      ansible_port: 22
+      ansible_private_key_file: .vagrant/machines/pgsqlslave/virtualbox/private_key
+

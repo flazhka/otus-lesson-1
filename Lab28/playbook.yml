@@ -1,0 +1,172 @@
+---
+- hosts: all
+  gather_facts: no
+  become: true
+  vars_files:
+    - defaults/main.yml
+  tasks:
+
+#################################  Install soft on Servers  ##########################################
+  - name: Install soft on Servers
+    block:
+      - name: install soft
+        yum:
+          name:
+            - epel-release
+            - nano
+          state: latest
+          update_cache: true        
+
+      - name: Set timezone to Europe/Moscow
+        timezone: name=Europe/Moscow
+        
+      - name: Restart chronyd
+        service:
+          name: chronyd
+          state: restarted
+          enabled: true
+
+      - name: Install the Percona repository
+        yum:
+          name: https://repo.percona.com/yum/percona-release-latest.noarch.rpm
+          state: latest
+
+      - name: install percona-server
+        yum:
+          name: Percona-Server-server-57 
+          state: latest
+
+      - name: Install MySQL-python
+        yum:
+          name:
+            - python3-pip
+            - MySQL-python
+          state: present
+    tags:
+      - soft
+
+#################################  Config MySQL on servers  ##########################################
+
+  - name: Confing MySQL on servers
+    block:
+      - name: copy 01-base.cnf to /etc/my.cnf.d/
+        template: src=01-base.j2 dest=/etc/my.cnf.d/01-base.cnf owner=root group=root mode=0644
+
+      - name: copy 05-binlog.cnf to /etc/my.cnf.d/
+        template: src=05-binlog.j2 dest=/etc/my.cnf.d/05-binlog.cnf owner=root group=root mode=0644
+
+      - name: copy mysql config files
+        template:
+          src: "{{ item }}"
+          dest: /etc/my.cnf.d/
+          owner: root
+          group: root
+          mode: 0644
+        loop:
+            - 02-max-connections.cnf
+            - 03-performance.cnf
+            - 04-slow-query.cnf
+
+      - name: start and enable mysqld service 
+        service:
+          name: mysqld
+          state: restarted
+          enabled: true
+
+      - name: Check installation password
+        shell: cat /var/log/mysqld.log | grep 'root@localhost:' | awk '{print $11}'
+        register: def_root_mysqlpass      
+    
+      - name: copy password for connection without password in playbook
+        copy:
+          dest: "/root/.my.cnf"
+          content: |
+            [client]
+            password={{ root_mysqlpass }}
+    tags:
+      - conf 
+
+#################################  Config Master  ##########################################
+
+  - name: Confing Master
+    block:
+      - name: Set new root password from default temporary password on master
+        shell: "mysql -e \"SET PASSWORD = '{{ root_mysqlpass }}';\"
+              --connect-expired-password -uroot -p'{{ def_root_mysqlpass.stdout }}'"
+
+      - name: CREATE DATABASE bet
+        mysql_db:
+          name: bet
+          state: present
+
+      - name: Copy database dump file bet.dmp to master
+        copy:
+          src: bet.dmp
+          dest: /tmp
+
+      - name: Restore database bet on master
+        mysql_db:
+          name: bet
+          state: import
+          target: /tmp/bet.dmp
+
+      - name: Create database user for replication
+        mysql_user:
+          name: repl
+          host: "%"
+          password: "{{ repl_mysqlpass }}"
+          priv: "*.*:REPLICATION SLAVE"
+          state: present
+
+      - name: Dump all databases bet without 2 tables
+        mysql_db:
+          state: dump
+          name: all
+          ignore_tables: bet.events_on_demand,bet.v_same_event 
+          target: /tmp/master.sql
+
+      - name: Copy dump from master to host machine
+        fetch:
+          src: /tmp/master.sql
+          dest: /tmp/
+          flat: yes                               
+    when: inventory_hostname == "mysqlmaster"       
+    tags:
+      - master
+
+#################################  Config Slave  ##########################################
+
+  - name: Confing Slave
+    block:
+      - name: Set new root password from default temporary password on slave
+        shell: "mysql -e \"SET PASSWORD = '{{ root_mysqlpass }}';\"
+              --connect-expired-password -uroot -p'{{ def_root_mysqlpass.stdout }}'"
+
+      - name: Copy database dump file master.sql to slave
+        copy:
+          src: /tmp/master.sql
+          dest: /tmp
+
+      - name: reset master on slave #to solve error - @@GLOBAL.GTID_PURGED can only be set when @@GLOBAL.GTID_EXECUTED is empty.
+        shell: mysql -e 'reset master;'
+
+      - name: Restore all databases on slave
+        mysql_db:
+          name: all
+          state: import
+          target: /tmp/master.sql        
+      
+      - name: Configure replication on the slave.
+        mysql_replication:
+          mode: changeprimary
+          master_host: 192.168.56.10
+          master_user: repl
+          master_password: "{{ repl_mysqlpass }}"
+          primary_auto_position: yes
+
+      - name: Start replica
+        mysql_replication:
+          mode: startreplica    
+    when: inventory_hostname == "mysqlslave"       
+    tags:
+      - slave

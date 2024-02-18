@@ -1,0 +1,181 @@
+---
+- hosts: all
+  gather_facts: no
+  become: true
+  vars_files:
+    - defaults/main.yml
+  tasks:
+#################################  Install soft on Servers  ##########################################
+  - name: Install soft on Servers
+    block:
+      - name: install base tools
+        apt:
+          name:
+            - nano
+            - ntp
+            - net-tools
+            - wget
+            - python3-psycopg2
+            - acl
+          state: present
+          update_cache: true     
+
+      - name: Set timezone to Europe/Moscow
+        timezone: name=Europe/Moscow
+        
+      - name: Restart ntp
+        service: name=ntp state=restarted enabled=true
+
+      - name: Set up postgres 14 repo
+        shell: |
+          echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list
+          wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+        args:
+          warn: no
+
+      - name: Install postgresql 14
+        apt:
+          name: postgresql-14
+          update_cache: yes
+
+      - name: start and enable postgresql 14 service 
+        service: name=postgresql state=restarted enabled=true          
+    tags:
+      - soft
+#################################  Config Postgresql on servers  ##########################################
+  - name: Confing Postgresql on servers
+    block:
+      - name: copy my_postgresql.conf to /etc/postgresql/14/main/conf.d/
+        copy: src=files/my_postgresql.conf dest=/etc/postgresql/14/main/conf.d/ owner=postgres group=postgres mode=0644
+
+      - name: allow connection by password on all interfaces
+        lineinfile:
+          dest: /etc/postgresql/14/main/pg_hba.conf
+          line: "{{ item }}"
+          insertafter: "# configuration parameter, or via the -i or -h command line switches."
+        with_items:
+          - host    all            all     0.0.0.0/0          md5
+          - host    replication    repl    192.168.56.0/24    md5
+
+      - name: copy repl password for connection without password to postgres
+        become_user: postgres
+        copy:
+          dest: "/var/lib/postgresql/.pgpass"
+          content: |
+            *:*:*:{{ postgres_replication_user }}:{{ postgres_replication_user_pass }}
+          owner: postgres
+          group: postgres
+          mode: 0600    
+
+      - name: Create a directory /var/lib/postgresql/.ssh
+        become_user: postgres
+        file:
+          path: /var/lib/postgresql/.ssh
+          state: directory
+          mode: '0700'
+          owner: postgres
+          group: postgres      
+
+      - name: create ssh_client_config.j2
+        become_user: postgres
+        copy: src=files/config dest=/var/lib/postgresql/.ssh/config owner=postgres group=postgres mode=0600
+
+      - name: restart postgresql 14 service 
+        service: name=postgresql state=restarted
+
+    tags:
+      - conf 
+#################################  Config Master  ##########################################
+  - name: Confing Master
+    block:
+      - name: copy id_rsa
+        become_user: postgres
+        copy: src=files/master/id_rsa dest=/var/lib/postgresql/.ssh/id_rsa owner=postgres group=postgres mode=0600     
+
+      - name: copy id_rsa.pub
+        become_user: postgres
+        copy: src=files/master/id_rsa.pub dest=/var/lib/postgresql/.ssh/id_rsa.pub owner=postgres group=postgres mode=0644  
+
+      - name: copy authorized_keys
+        become_user: postgres
+        copy: src=files/master/authorized_keys dest=/var/lib/postgresql/.ssh/authorized_keys owner=postgres group=postgres mode=0600
+
+      - name: Create a Replication user
+        become_user: postgres
+        postgresql_user:
+          name: '{{ postgres_replication_user }}'
+          password: '{{ postgres_replication_user_pass }}'
+          role_attr_flags: Replication
+          encrypted: yes
+          state: present
+
+      - name: Create test_base 
+        become_user: postgres
+        postgresql_db: name=test_base
+
+      - name: Create table1 in test_base
+        become_user: postgres      
+        postgresql_table:
+          db: test_base
+          name: table1
+          columns:
+            - id INT
+            - name TEXT
+
+    when: inventory_hostname == "pgsqlmaster"       
+    tags:
+      - master
+
+#################################  Config Slave  ##########################################
+  - name: Confing Slave
+    block:
+      - name: copy id_rsa
+        become_user: postgres
+        copy: src=files/slave/id_rsa dest=/var/lib/postgresql/.ssh/id_rsa owner=postgres group=postgres mode=0600  
+
+      - name: copy id_rsa.pub
+        become_user: postgres
+        copy: src=files/slave/id_rsa.pub dest=/var/lib/postgresql/.ssh/id_rsa.pub owner=postgres group=postgres mode=0644
+
+      - name: copy authorized_keys
+        become_user: postgres
+        copy: src=files/slave/authorized_keys dest=/var/lib/postgresql/.ssh/authorized_keys owner=postgres group=postgres mode=0600     
+
+      - name: stop postgresql 14 service 
+        service: name=postgresql state=stopped
+
+      - name: backup postgress data and delete before restoring data from master
+        shell: |
+          cp -R /var/lib/postgresql/14/main /var/lib/postgresql/14/main_orig
+          rm -rf /var/lib/postgresql/14/main/*      
+
+      - name: copy backup from master
+        become_user: postgres
+        shell: pg_basebackup -h 192.168.56.30 -D /var/lib/postgresql/14/main -U repl -P -v  -R -X stream -C -S pgstandby1
+        tags:
+          - backup
+
+      - name: restart postgresql 14 service 
+        service: name=postgresql state=started
+
+#################################  Backup with pg_dump  ##########################################
+      - name: Create a directory /var/lib/postgresql/backup
+        become_user: postgres
+        file:
+          path: /var/lib/postgresql/backup
+          state: directory
+          owner: postgres
+          group: postgres
+          mode: '0775'
+
+      - name: copy pg_dump.sh
+        become_user: postgres
+        copy: src=pg_dump.sh dest=/var/lib/postgresql/pg_dump.sh owner=postgres group=postgres mode=0774
+
+      - name: add task in cron
+        become_user: postgres
+        shell: echo "* * * * * sh /var/lib/postgresql/pg_dump.sh" | crontab -
+      
+    when: inventory_hostname == "pgsqlslave"       
+    tags:
+      - slave
